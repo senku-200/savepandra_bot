@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+myenv/
+
+# VSCode
+.vscode/
+
+# Environment variables
+.env
+
+# Google credentials file
+credentials.json
+
+# Temporary files
+temp/
+*.log
+
+# Mac system files
+.DS_Store
+
+# Python egg files
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Render/Heroku files
+*.sqlite3
