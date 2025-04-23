@@ -7,7 +7,7 @@ app = Flask(__name__)
 flow = None
 credentials_event = threading.Event()  # Thread-safe signal
 
-@app.route("/")
+@app.route("/oauth2callback")
 def oauth_callback():
     global flow
     if not flow:
