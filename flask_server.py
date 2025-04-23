@@ -4,30 +4,28 @@ import threading
 
 app = Flask(__name__)
 
-flow = None
-credentials_event = threading.Event()  # Thread-safe signal
+# Store flow per user
+user_flows = {}
+credentials_event = threading.Event()
+
+def set_user_flow(user_id, flow):
+    user_flows[user_id] = flow
+    credentials_event.clear()
 
 @app.route("/oauth2callback")
 def oauth_callback():
-    global flow
-    if not flow:
-        return "❌ OAuth flow not set. Please restart the bot."
+    # Get user ID from query param
+    user_id = request.args.get("state")  # Passed via authorization_url as "state"
 
-    code = request.args.get("code")
-    if code:
-        try:
-            flow.fetch_token(code=code)
-            credentials_event.set()
-            return "✅ Authorization successful. You may close this tab."
-        except Exception as e:
-            print(f"[OAuth Error] {e}")
-            return "❌ Authorization failed. Please try again."
-    return "❌ No authorization code found."
+    if not user_id or user_id not in user_flows:
+        return "❌ User flow not found. Please restart /start in Telegram."
 
-def set_flow(oauth_flow):
-    global flow
-    flow = oauth_flow
-    credentials_event.clear()
+    flow = user_flows[user_id]
 
-def run_flask_server():
-    app.run(port=8080, debug=False, use_reloader=False)
+    try:
+        flow.fetch_token(authorization_response=request.url)
+        credentials_event.set()
+        return "✅ Authorization successful. You may close this tab."
+    except Exception as e:
+        print(f"[OAuth Error] {e}")
+        return "❌ Authorization failed. Please try again."
