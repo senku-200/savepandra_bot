@@ -1,5 +1,6 @@
 import os
 import logging
+import json
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
@@ -19,14 +20,14 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 REDIRECT_URL = os.getenv("REDIRECT_URL") 
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
 user_credentials = {}
-
+credentials_info = json.loads(os.getenv("GOOGLE_CREDENTIALS_JSON"))
 # Start Flask OAuth server in the background
 
 # Command handler for /start
 async def start(update: Update, context):
     try:
         logger.debug("Start command received.")
-        flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+        flow = InstalledAppFlow.from_client_secrets_file(credentials_info, SCOPES)
         flow.redirect_uri = REDIRECT_URL
         auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline')
 
