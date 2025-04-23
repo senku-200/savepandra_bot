@@ -27,7 +27,7 @@ credentials_info = json.loads(os.getenv("GOOGLE_CREDENTIALS_JSON"))
 async def start(update: Update, context):
     try:
         logger.debug("Start command received.")
-        flow = InstalledAppFlow.from_client_secrets_file(credentials_info, SCOPES)
+        flow = InstalledAppFlow.from_client_config(credentials_info, SCOPES)
         flow.redirect_uri = REDIRECT_URL
         auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline')
 
