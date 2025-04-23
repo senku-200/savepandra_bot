@@ -1,6 +1,5 @@
 import os
-import time
-import threading
+import logging
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
@@ -8,21 +7,27 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-from flask_server import run_flask_server, set_flow, credentials_event
+from flask_server import set_flow, credentials_event
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+REDIRECT_URL = os.getenv("REDIRECT_URL") 
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
 user_credentials = {}
 
-# Start Flask OAuth server in background
-threading.Thread(target=run_flask_server, daemon=True).start()
+# Start Flask OAuth server in the background
 
+# Command handler for /start
 async def start(update: Update, context):
     try:
+        logger.debug("Start command received.")
         flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-        flow.redirect_uri = 'http://localhost:8080/'
+        flow.redirect_uri = REDIRECT_URL
         auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline')
 
         set_flow(flow)
@@ -39,9 +44,10 @@ async def start(update: Update, context):
         else:
             await update.message.reply_text("❌ Timeout. Please try /start again.")
     except Exception as e:
-        print(f"[Start Error] {e}")
+        logger.error(f"[Start Error] {e}")
         await update.message.reply_text("❌ Authorization error occurred.")
 
+# Command handler for file upload
 async def handle_file(update: Update, context):
     user_id = update.effective_user.id
     creds = user_credentials.get(user_id)
@@ -80,16 +86,25 @@ async def handle_file(update: Update, context):
         os.remove(local_path)
         await update.message.reply_text("✅ File uploaded successfully to Google Drive.")
     except Exception as e:
-        print(f"[Upload Error] {e}")
+        logger.error(f"[Upload Error] {e}")
         await update.message.reply_text("❌ Upload failed. Try again.")
 
-# Start Telegram bot
-def main():
+# Main function to run the bot
+async def start_telegram_bot():
+    logger.debug("Starting bot...")
+
+    # Create the Application instance
     app = Application.builder().token(BOT_TOKEN).build()
+
+    # Register handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
-    print("🚀 Bot is running. Press Ctrl+C to stop.")
-    app.run_polling()
+
+    # Start polling
+    logger.debug("🚀 Bot is running. Press Ctrl+C to stop.")
+    await app.run_polling()
+
+    # threading.Thread(target=run_flask_server, daemon=True).start()
 
 if __name__ == "__main__":
-    main()
+    start_telegram_bot()
